@@ -2,6 +2,8 @@
 
 **Null-world tests of code-graph tools for Gemma 4 coding agents**
 
+Yerramsetty Sai Venkata Suchita, Manjunath Mailey, Kanuma Jagan Mohan
+
 [![License Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Python 3](https://img.shields.io/badge/Python-3-3776AB.svg)](https://www.python.org/)
 [![Kaggle notebooks](https://img.shields.io/badge/Kaggle-notebooks-20BEFF.svg)](https://www.kaggle.com/code/suchitayerramsetty/release-b-outcomes-and-analysis)
@@ -20,6 +22,7 @@ Coding agents are given call graphs and embedding search on the premise that rep
 | Real graph tools minus grep (W1-W0) | +7.5 | +4.1 | -1.7 eq | +3.2 |
 | Rewired graph tools minus grep (W2-W0) | +5.3 | +5.5 | -0.4 eq | +4.6 |
 | Real minus rewired, neutral prompt (W1-W2) | +2.2 | -1.4 | -1.2 eq | -1.4 eq |
+| Real minus rewired, graph-first prompt (W1G-W2G) | +1.7 | -0.9 | +1.2 eq | +1.4 eq |
 
 ## The question
 
@@ -82,6 +85,16 @@ A tool ablation compares W1 with W0. An interface-matched null compares W1 with 
 
 A gain in the left column can come from any row. A gain in the right column can come only from which functions are connected.
 
+## Related work
+
+**Graphs for code agents.** SWE-bench [1] made issue resolution the standard test for coding agents, and SWE-agent [11] and Agentless [2] showed that localization drives much of the outcome. RepoGraph [3], CodexGraph [5], LocAgent [4], OrcaLoca [14] and CoSIL [15] give agents repository graphs and report better localization and resolution. Their evidence is a comparison of systems with and without the graph component.
+
+**Is structure needed?** GrepRAG [7] finds that grep-style retrieval matches or beats graph retrieval for code completion, and Sen et al. [16] reach a similar verdict for agent memory. Bhola et al. [8] toggle a structural index inside one harness with a large proprietary model and find it helps on multi-file changes. Closest to us, Bellam [6] ablates tool sets for ten small open models, Gemma 4 E4B among them, on SWE-bench Verified. That study finds that structured tools help small models most, that agents rarely chain graph expansions, and that part of the gain reflects the form of the answer more than finding the target. Our results agree on all three points. Our method differs. A tool ablation removes the interface together with the content. We keep the interface and remove only the content, which is the step needed to attribute a gain to structure.
+
+**Graphs for language models.** The same question arises for knowledge graphs. Tree-of-Traversals [17] gives a black-box model actions for walking a graph, as the harness tools do for code. KG-LLM-Bench [18] shows that the way a graph is presented changes accuracy with the facts held fixed, an interface effect of the kind we isolate. Models also stay useful when graph facts are corrupted [19, 20].
+
+**Null models.** Degree-preserving rewiring comes from network science [9], and randomization tests exposed saliency methods that did not depend on the model they claimed to explain [10]. We bring the same logic to agent tools.
+
 ## Study design
 
 ### Data, labels and the probe agent
@@ -123,17 +136,13 @@ For (c) we took merged pull requests that close a GitHub issue, used the issue t
 
 ### Order of work
 
-```mermaid
-timeline
-    title Order of work
-    section Pre-specified
-        Plan : Analysis plan written : Gold labels and null worlds fixed by hash
-        Primary runs : 82 primary tasks, eight conditions, two seeds, two models
-    section Exploratory
-        After first results : Hashes posted publicly : Extensions a, b, d and e
-        Held-out, commit version : Tasks built from commit messages in click, flask and attrs
-        Held-out, issue version : 109 tasks built from merged pull requests that close an issue
-```
+| Step | Stage | What happened |
+|---|---|---|
+| 1 | Pre-specified | Analysis plan written; gold labels and null worlds fixed by hash |
+| 2 | Pre-specified | Primary runs on 82 tasks, eight conditions, two seeds, two models |
+| 3 | Exploratory | Hashes posted publicly; extensions (a), (b), (d) and (e) run |
+| 4 | Exploratory | First held-out version built from commit messages in click, flask and attrs |
+| 5 | Exploratory | Held-out set rebuilt from 109 merged pull requests that close an issue |
 
 ## Results
 
@@ -145,22 +154,6 @@ timeline
 |---|---|---|---|---|---|---|---|---|
 | E4B | 4.3 | 16.5 | 20.1 | 17.7 | 23.2 | 21.3 | 18.3 | 22.0 |
 | 31B | 15.2 | 53.7 | 53.0 | 54.9 | 54.3 | 50.6 | 50.0 | 51.2 |
-
-```mermaid
-xychart-beta
-    title "E4B, hit@5 (%) on 82 primary tasks"
-    x-axis [NR, W0, W1, W2, W3, W1G, W2G, W3G]
-    y-axis "hit@5 (%)" 0 --> 60
-    bar [4.3, 16.5, 20.1, 17.7, 23.2, 21.3, 18.3, 22.0]
-```
-
-```mermaid
-xychart-beta
-    title "31B, hit@5 (%) on 82 primary tasks"
-    x-axis [NR, W0, W1, W2, W3, W1G, W2G, W3G]
-    y-axis "hit@5 (%)" 0 --> 60
-    bar [15.2, 53.7, 53.0, 54.9, 54.3, 50.6, 50.0, 51.2]
-```
 
 **Pre-specified contrasts (pp, 95% intervals).**
 
@@ -179,9 +172,9 @@ Reading code is the large effect. No hypothesis about graph content is supported
 | Model | Task set | W1 | W2 | W1G | W2G |
 |---|---|---|---|---|---|
 | E4B | Primary | 78.7% | 81.7% | 98.8% | 98.2% |
-| E4B | Held-out | 75.2% | 74.3% | | |
+| E4B | Held-out | 75.2% | 74.3% | 99.5% | 99.1% |
 | 31B | Primary | 22.0% | 20.1% | 92.7% | 92.7% |
-| 31B | Held-out | 12.8% | 13.3% | | |
+| 31B | Held-out | 12.8% | 13.3% | 95.4% | 95.0% |
 
 The two models treat the tools differently. E4B calls a graph tool in most episodes without being told to. 31B rarely does, and the graph-first prompt raises adoption without raising accuracy. In 45% of graph-first primary episodes 31B makes exactly one graph call and returns to grep.
 
@@ -230,7 +223,7 @@ The signal is lost downstream. After a gold function appeared in a tool result, 
 
 **Official sample agent.** With E4B on real bug fixing over 80 tasks, 6 tasks were resolved with the real graph and 5 with the rewired graph (+1.2 pp [-2.5, 6.2]). The agent called similarity search 266 times and the edge tools 32 times. Resolution is near the floor, so this check can rule out only a large hidden benefit.
 
-**Label audit.** An independent labeller that maps changed line numbers to AST spans in the task snapshot finds 161 primary gold nodes against 170 from text matching. The two agree on 130, which confirms 130 of the 170 (76.5%). Re-scoring every stored prediction with the AST labels, with only the nodes both methods agree on, or with their union leaves every RQ1 conclusion unchanged.
+**Label audit.** An independent labeller that maps changed line numbers to AST spans in the task snapshot finds 161 primary gold nodes against 170 from text matching, and confirms 130 of the 170 (76.5%). Re-scoring every stored prediction with the AST labels, with only the nodes both methods agree on, or with their union leaves every RQ1 conclusion unchanged.
 
 ## What we got wrong or could not show
 
@@ -259,23 +252,23 @@ The held-out builder reads a Kaggle secret named `GITHUB_TOKEN` (read-only publi
 The probe runs need GPUs and the official vLLM setup, so they are not among the public notebooks. The held-out probe notebooks are [probe/probe_heldout_e4b.ipynb](probe/probe_heldout_e4b.ipynb) and [probe/probe_heldout_31b.ipynb](probe/probe_heldout_31b.ipynb). The probe harness used on the competition tasks ships as source inside the release-b notebook, which writes it to `probe_harness.py` for reading and does not execute it.
 
 ```mermaid
-flowchart LR
+flowchart TD
     C[("Competition data<br/>Kaggle input")]
     GH[("GitHub<br/>click, flask, attrs")]
-    A["maporritual-release<br/>labels and worlds, hash check"]
-    P["Probe runs, competition tasks<br/>GPU, harness source in release-b"]
-    HC["graphnull-heldout-check<br/>co-edit recall null check"]
-    HI["maporritual-heldout-issues<br/>held-out tasks, labels, W1 and W2"]
-    HP["probe_heldout_e4b and probe_heldout_31b<br/>GPU"]
-    B["release-b-outcomes-and-analysis<br/>embedded outcome table"]
-    O["Tables, contrasts, Figures 1 and 2"]
+    A["maporritual-release<br/>labels, worlds, hashes"]
+    HC["graphnull-heldout-check<br/>co-edit null check"]
+    HI["maporritual-heldout-issues<br/>held-out tasks"]
+    P["Probe runs, competition<br/>GPU"]
+    HP["Probe runs, held-out<br/>GPU"]
+    B["release-b-outcomes-and-analysis<br/>outcome table"]
+    O["Tables and<br/>Figures 1 and 2"]
     C --> A
-    A -.->|"same labels and worlds, checked by hash"| P
+    A -.->|"hash-checked inputs"| P
     C --> P
     C --> HP
     GH --> HC
     GH --> HI
-    HI -->|"notebook output attached as input"| HP
+    HI -->|"attached as input"| HP
     P -->|"per-episode outcomes"| B
     HP -->|"per-episode outcomes"| B
     B --> O
@@ -370,15 +363,58 @@ sha256 prefixes.
 | Held-out issue labels | `2bec9d75ed40af98` |
 | Outcome table | `00a9ba201be06f31` |
 
+## References
+
+[1] C. E. Jimenez et al. SWE-bench. ICLR 2024.
+
+[2] C. S. Xia et al. Agentless. arXiv:2407.01489, 2024.
+
+[3] S. Ouyang et al. RepoGraph. ICLR 2025.
+
+[4] Z. Chen et al. LocAgent. ACL 2025.
+
+[5] X. Liu et al. CodexGraph. NAACL 2025.
+
+[6] S. Bellam. How Do Small Coding Agents Use Code Graphs and Embeddings? arXiv:2610.33958, 2026.
+
+[7] B. Wang et al. GrepRAG. arXiv:2601.23254, 2026.
+
+[8] I. Bhola et al. Code Isn't Memory. arXiv:2606.22417, 2026.
+
+[9] S. Maslov, K. Sneppen. Specificity and Stability in Topology of Protein Networks. Science, 2002.
+
+[10] J. Adebayo et al. Sanity Checks for Saliency Maps. NeurIPS 2018.
+
+[11] J. Yang et al. SWE-agent. NeurIPS 2024.
+
+[12] Google. The Gemma 4 Developer Agent Competition. Kaggle, 2026.
+
+[13] Analysis plan hashes. kaggle.com/competitions/gemma-4-developer-agent-paper/discussion/758077
+
+[14] Z. Yu et al. OrcaLoca. ICML 2025.
+
+[15] Z. Jiang et al. CoSIL. ASE 2025.
+
+[16] Sen et al. Is Grep All You Need? arXiv, 2026.
+
+[17] E. Markowitz et al. Tree-of-Traversals. ACL 2024.
+
+[18] E. Markowitz et al. KG-LLM-Bench. arXiv:2504.07087, 2025.
+
+[19] Y. Sui et al. Can Knowledge Graphs Make Large Language Models More Trustworthy? ACL 2025.
+
+[20] X. Dai et al. Large Language Models Can Better Understand Knowledge Graphs Than We Thought. arXiv:2402.11541, 2024.
+
 ## Citation
 
 ```bibtex
-@misc{maporritual2026,
+@misc{suchita2026maporritual,
   title        = {Map or Ritual? Null-World Tests of Code-Graph Tools for Gemma 4 Coding Agents},
-  author       = {TODO fill in author names},
+  author       = {Yerramsetty Sai Venkata Suchita and Manjunath Mailey and Kanuma Jagan Mohan},
   year         = {2026},
   howpublished = {Kaggle Gemma 4 Developer Agent Paper Track},
-  note         = {Code release, https://www.kaggle.com/code/suchitayerramsetty/release-b-outcomes-and-analysis}
+  url          = {https://github.com/yerramsettysuchita/map-or-ritual},
+  note         = {Code release and analysis notebooks on Kaggle}
 }
 ```
 
